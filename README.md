@@ -1,7 +1,6 @@
 ## RuntimePocoGenerator
-====================
 
-![Icon](https://raw.github.com/rjasica/RuntimePocoGenerator/master/src/package_icon.png)
+![Icon](https://raw.github.com/rjasica/RuntimePocoGenerator/master/nuget/package_icon.png)
 
 
 ## Nuget 
