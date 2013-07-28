@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <authors>Rafał Jasica</authors>
+    <owners>Rafał Jasica</owners>
+    <licenseUrl>https://raw.github.com/rjasica/RuntimePocoGenerator/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/rjasica/RuntimePocoGenerator</projectUrl>
+    <iconUrl>https://raw.github.com/rjasica/RuntimePocoGenerator/master/src/package_icon.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Emit poco objects from other or custom data at runtime</description>
+    <tags>emit poco generate runtime type</tags>
+  </metadata>
+</package>

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace RJ.RuntimePocoGenerator.PropertySource
+namespace RJ.RuntimePocoGenerator.PropertySources
 {
     internal class ClassSource : IPropertySource
     {

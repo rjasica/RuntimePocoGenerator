@@ -91,6 +91,13 @@ namespace RJ.RuntimePocoGenerator.Tests
         }
 
         [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void GenerateTypes_should_throw_exception_when_type_descriptions_is_null()
+        {
+            generator.GenerateTypes(null);
+        }
+
+        [Test]
         [ExpectedException(typeof(ArgumentException))]
         public void GenerateTypes_should_throw_exception_when_type_description_is_null()
         {

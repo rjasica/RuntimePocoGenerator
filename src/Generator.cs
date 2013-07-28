@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using RJ.RuntimePocoGenerator.PropertySource;
+using RJ.RuntimePocoGenerator.PropertySources;
 
 namespace RJ.RuntimePocoGenerator
 {
@@ -13,6 +13,8 @@ namespace RJ.RuntimePocoGenerator
 
         private readonly IDictionary<Type, IGeneratedType> typeCache;
 
+        private readonly IDictionary<MethodInfo, IGeneratedType> methodCache;
+
         private readonly IDictionary<ITypeDescription, IGeneratedType> typeDescritpionCache;
 
         public Generator(IPocoGenertor pocoGenerator)
@@ -20,6 +22,7 @@ namespace RJ.RuntimePocoGenerator
             this.pocoGenerator = pocoGenerator;
             this.typeCache = new Dictionary<Type, IGeneratedType>();
             this.typeDescritpionCache = new Dictionary<ITypeDescription, IGeneratedType>();
+            this.methodCache = new Dictionary<MethodInfo, IGeneratedType>();
         }
 
         public Generator()
@@ -29,6 +32,16 @@ namespace RJ.RuntimePocoGenerator
 
         public IGeneratedType GenerateType(string typeName, IDictionary<string, Type> properties)
         {
+            if (typeName == null)
+            {
+                throw new ArgumentNullException("typeName");
+            }
+
+            if (properties == null)
+            {
+                throw new ArgumentNullException("properties");
+            }
+
             return GenerateType(GetTypeDescription(typeName, properties));
         }
 
@@ -41,6 +54,11 @@ namespace RJ.RuntimePocoGenerator
 
         public IGeneratedType GenerateType(Type sourceClass)
         {
+            if (sourceClass == null)
+            {
+                throw new ArgumentNullException("sourceClass");
+            }
+
             IGeneratedType generatedType;
             if (!this.typeCache.TryGetValue(sourceClass, out generatedType))
             {
@@ -59,7 +77,19 @@ namespace RJ.RuntimePocoGenerator
 
         public IGeneratedType GenerateType(MethodInfo method)
         {
-            return GenerateType(GetTypeDescription(method));
+            if (method == null)
+            {
+                throw new ArgumentNullException("method");
+            }
+
+            IGeneratedType generatedType;
+            if (!this.methodCache.TryGetValue(method, out generatedType))
+            {
+                generatedType = GenerateType(GetTypeDescription(method));
+                this.methodCache[method] = generatedType;
+            }
+
+            return generatedType;
         }
 
         private static TypeDescription GetTypeDescription(MethodInfo method)
@@ -71,11 +101,21 @@ namespace RJ.RuntimePocoGenerator
 
         public IGeneratedType GenerateType(ITypeDescription typeDescription)
         {
+            if (typeDescription == null)
+            {
+                throw new ArgumentNullException("typeDescription");
+            }
+
             return this.GenerateTypes(new[] { typeDescription }).Single();
         }
 
         public IEnumerable<IGeneratedType> GenerateTypes(IEnumerable<Type> types)
         {
+            if (types == null)
+            {
+                throw new ArgumentNullException("types");
+            }
+
             var toGenerate = new List<Type>();
             var cached = types.Select(x =>
             {
@@ -114,12 +154,61 @@ namespace RJ.RuntimePocoGenerator
 
         public IEnumerable<IGeneratedType> GenerateTypes(IEnumerable<MethodInfo> methods)
         {
-            var typeDescriptions = methods.Select(x => GetTypeDescription(x)).ToList();
-            return GenerateTypes(typeDescriptions);
+            if (methods == null)
+            {
+                throw new ArgumentNullException("methods");
+            }
+
+            var toGenerate = new List<MethodInfo>();
+            var cached = methods.Select(x =>
+            {
+                IGeneratedType generatedType;
+                if (this.methodCache.TryGetValue(x, out generatedType))
+                {
+                    return generatedType;
+                }
+                else
+                {
+                    toGenerate.Add(x);
+                    return null;
+                }
+            }).Where(x => x != null).ToList();
+            if (toGenerate.Count != 0)
+            {
+                var descriptionToMethod = new Dictionary<ITypeDescription, MethodInfo>();
+                var typeDescriptions = toGenerate.Select(x =>
+                    {
+                        var typeDescription = (ITypeDescription) GetTypeDescription(x);
+                        descriptionToMethod[typeDescription] = x;
+                        return new
+                            {
+                                TypeDescription = typeDescription,
+                                Type = x
+                            };
+                    }).ToDictionary(x => x.TypeDescription, x => x.Type);
+                var generatedTypes = GenerateTypes(typeDescriptions.Keys);
+
+                foreach (var generatedType in generatedTypes)
+                {
+                    var method = descriptionToMethod[generatedType.TypeDescription];
+                    this.methodCache[method] = generatedType;
+                }
+
+                return cached.Union(generatedTypes);
+            }
+            else
+            {
+                return cached;
+            }
         }
 
         public IEnumerable<IGeneratedType> GenerateTypes(IEnumerable<ITypeDescription> typeDescriptions)
         {
+            if (typeDescriptions == null)
+            {
+                throw new ArgumentNullException("typeDescriptions");
+            }
+
             var toGenerate = new List<ITypeDescription>();
             var cached = typeDescriptions.Select(x =>
                 {
@@ -137,6 +226,10 @@ namespace RJ.RuntimePocoGenerator
             if (toGenerate.Count != 0)
             {
                 var generated = this.pocoGenerator.GenerateTypes(toGenerate);
+                foreach (var generatedType in generated)
+                {
+                    this.typeDescritpionCache[generatedType.TypeDescription] = generatedType;
+                }
                 return cached.Union(generated);
             }
             else

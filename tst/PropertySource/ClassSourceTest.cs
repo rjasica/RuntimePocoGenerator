@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
-using RJ.RuntimePocoGenerator.PropertySource;
+using RJ.RuntimePocoGenerator.PropertySources;
 
 
 namespace RJ.RuntimePocoGenerator.Tests.PropertySource

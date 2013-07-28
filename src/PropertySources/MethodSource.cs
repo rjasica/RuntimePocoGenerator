@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using RJ.RuntimePocoGenerator.Extensions;
 
-namespace RJ.RuntimePocoGenerator.PropertySource
+namespace RJ.RuntimePocoGenerator.PropertySources
 {
     internal class MethodSource : IPropertySource
     {
@@ -24,22 +25,10 @@ namespace RJ.RuntimePocoGenerator.PropertySource
         {
             foreach (ParameterInfo parameter in method.GetParameters())
             {
-                var name = UppercaseFirst(parameter.Name);
+                var name = parameter.Name.UppercaseFirst();
                 var type = parameter.ParameterType;
                 yield return  new PropertyDescription(name, type);
             }
-        }
-
-        private static string UppercaseFirst(string text)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return text;
-            }
-
-            char[] c = text.ToCharArray();
-            c[0] = char.ToUpper(c[0]);
-            return new string(c);
         }
     }
 }
