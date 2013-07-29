@@ -38,6 +38,23 @@ namespace RJ.RuntimePocoGenerator.Tests
             public double Y { get; set; }
         }
 
+        private class A
+        {
+            public B B { get; private set; }
+
+            public C C { get; private set; }
+        }
+
+        private class B
+        {
+            public C C { get; private set; }
+        }
+
+        private class C
+        {
+            public int Number { get; private set; }
+        }
+
         private TypeDescription pointTypeDescription = new TypeDescription("Point", new List<IPropertyDescription>()
             {
                 new PropertyDescription("X", typeof(int)),
@@ -152,6 +169,30 @@ namespace RJ.RuntimePocoGenerator.Tests
             var generatedTypeSecond = generator.GenerateType(typeof(ImmutablePoint));
 
             Assert.AreEqual(generatedTypeFirst.Type, generatedTypeSecond.Type);
+        }
+
+        [Test]
+        public void GenerateType_should_return_type_from_complex_source_type()
+        {
+            var result = generator.GenerateType(typeof(A));
+
+            dynamic instance = Activator.CreateInstance(result.Type);
+
+            Assert.NotNull(instance);
+
+            var aType = (Type)instance.GetType();
+            var bType = aType.GetProperty("B").PropertyType;
+            var cType = aType.GetProperty("C").PropertyType;
+            
+            aType.GetProperty("B").GetSetMethod().Invoke(instance, new object[] {Activator.CreateInstance(bType)});
+            bType.GetProperty("C").GetSetMethod().Invoke(instance.B, new object[] { Activator.CreateInstance(cType) });
+            aType.GetProperty("C").GetSetMethod().Invoke(instance, new object[] { Activator.CreateInstance(cType) });
+            
+            instance.B.C.Number = 1;
+            instance.C.Number = 2;
+
+            Assert.AreEqual(1, instance.B.C.Number);
+            Assert.AreEqual(2, instance.C.Number);
         }
 
         #endregion
@@ -303,10 +344,10 @@ namespace RJ.RuntimePocoGenerator.Tests
                     firstMethod,
                     secondMethod
                 });
-            var intFromFirst = firstResult.First();
-            var intFromSecond = secondResult.First();
-            var doubleFromFirst = firstResult.Last();
-            var doubleFromSecond = secondResult.Last();
+            var intFromFirst = firstResult.Where(x => x.Name.Contains("Int")).First();
+            var intFromSecond = secondResult.Where(x => x.Name.Contains("Int")).First();
+            var doubleFromFirst = firstResult.Where(x => x.Name.Contains("Double")).First();
+            var doubleFromSecond = secondResult.Where(x => x.Name.Contains("Double")).First();
 
             Assert.NotNull(firstResult);
             Assert.NotNull(secondResult);

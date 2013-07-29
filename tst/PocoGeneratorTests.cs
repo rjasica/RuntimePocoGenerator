@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
+using RJ.RuntimePocoGenerator.TypeMappers;
 
 namespace RJ.RuntimePocoGenerator.Tests
 {
@@ -10,12 +11,16 @@ namespace RJ.RuntimePocoGenerator.Tests
     public class PocoGeneratorTests
     {
         private PocoEmitGenertor generator;
+
         private TypeDescription typeDescription;
+
+        private ITypeMapper typeMapper;
 
         [SetUp]
         public void SetUp()
         {
             generator = new PocoEmitGenertor();
+            typeMapper = new DefaultTypeMapper(new Dictionary<ITypeDescription, IGeneratedType>());
             typeDescription = new TypeDescription("Sample.Class", new List<IPropertyDescription>()
                 {
                     new PropertyDescription("Number", typeof(int)),
@@ -26,7 +31,7 @@ namespace RJ.RuntimePocoGenerator.Tests
         [Test]
         public void GenerateTypes_should_generate_default_constructor()
         {
-            var result = generator.GenerateTypes(new []{typeDescription}).FirstOrDefault();
+            var result = generator.GenerateTypes(new []{typeDescription}, typeMapper).FirstOrDefault();
             
             Assert.NotNull(result);
             Assert.AreEqual(result.TypeDescription, result.TypeDescription);
@@ -42,7 +47,7 @@ namespace RJ.RuntimePocoGenerator.Tests
         [Test]
         public void GenerateTypes_should_generate_constructor()
         {
-            var result = generator.GenerateTypes(new[] { typeDescription }).FirstOrDefault();
+            var result = generator.GenerateTypes(new[] { typeDescription }, typeMapper).FirstOrDefault();
 
             Assert.NotNull(result);
             Assert.AreEqual(result.TypeDescription, result.TypeDescription);
@@ -56,7 +61,7 @@ namespace RJ.RuntimePocoGenerator.Tests
         [Test]
         public void GenerateTypes_should_generate_empty_type()
         {
-            var result = generator.GenerateTypes(new[] {new TypeDescription("Test", new List<IPropertyDescription>())}).FirstOrDefault();
+            var result = generator.GenerateTypes(new[] { new TypeDescription("Test", new List<IPropertyDescription>()) }, typeMapper).FirstOrDefault();
 
             Assert.NotNull(result);
             Assert.AreEqual(result.TypeDescription, result.TypeDescription);
@@ -78,7 +83,7 @@ namespace RJ.RuntimePocoGenerator.Tests
                             new PropertyDescription("X", typeof(int)),
                             new PropertyDescription("Y", typeof(int))
                         }), 
-                });
+                }, typeMapper);
 
             Assert.NotNull(result);
             Assert.AreEqual(2, result.Count());
@@ -94,7 +99,14 @@ namespace RJ.RuntimePocoGenerator.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void GenerateTypes_should_throw_exception_when_type_descriptions_is_null()
         {
-            generator.GenerateTypes(null);
+            generator.GenerateTypes(null, typeMapper);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void GenerateTypes_should_throw_exception_when_type_mapper_is_null()
+        {
+            generator.GenerateTypes(new List<ITypeDescription>(), null);
         }
 
         [Test]
@@ -104,7 +116,7 @@ namespace RJ.RuntimePocoGenerator.Tests
             generator.GenerateTypes(new ITypeDescription[]
                 {
                     null
-                });
+                }, typeMapper);
         }
 
         [Test]
@@ -114,7 +126,7 @@ namespace RJ.RuntimePocoGenerator.Tests
             generator.GenerateTypes(new ITypeDescription[]
                 {
                     new TypeDescription(null, new List<IPropertyDescription>())
-                });
+                }, typeMapper);
         }
 
         [Test]
@@ -124,7 +136,7 @@ namespace RJ.RuntimePocoGenerator.Tests
             generator.GenerateTypes(new ITypeDescription[]
                 {
                     new TypeDescription("Type", null)
-                });
+                }, typeMapper);
         }
 
         [Test]
@@ -137,7 +149,7 @@ namespace RJ.RuntimePocoGenerator.Tests
                         {
                             null
                         }) 
-                });
+                }, typeMapper);
         }
 
         [Test]
@@ -150,7 +162,7 @@ namespace RJ.RuntimePocoGenerator.Tests
                         {
                             new PropertyDescription(null, typeof(int))
                         })
-                });
+                }, typeMapper);
         }
 
         [Test]
@@ -163,7 +175,7 @@ namespace RJ.RuntimePocoGenerator.Tests
                         {
                             new PropertyDescription("Prop", null)
                         })
-                });
+                }, typeMapper);
         }
     }
 }
