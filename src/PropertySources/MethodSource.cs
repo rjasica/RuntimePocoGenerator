@@ -7,7 +7,7 @@ using RJ.RuntimePocoGenerator.Extensions;
 
 namespace RJ.RuntimePocoGenerator.PropertySources
 {
-    internal class MethodSource : IPropertySource
+    public class MethodSource : IPropertySource
     {
         private readonly MethodInfo method;
 

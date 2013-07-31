@@ -177,5 +177,49 @@ namespace RJ.RuntimePocoGenerator.Tests
                         })
                 }, typeMapper);
         }
+
+        [Test]
+        public void GenerateTypes_should_load_type_from_disk_default_location()
+        {
+            generator = new PocoEmitGenertor(true);
+            var result = generator.GenerateTypes(new ITypeDescription[]
+                {
+                    new TypeDescription("Type", new List<IPropertyDescription>()
+                        {
+                            new PropertyDescription("Prop", typeof(int))
+                        })
+                }, typeMapper);
+
+            Assert.NotNull(result);
+            var first = result.Single();
+            Assert.NotNull(first.Type);
+            Assert.NotNull(first.Type.Assembly.Location);
+        }
+
+        [Test]
+        public void GenerateTypes_should_load_type_from_disk()
+        {
+            generator = new PocoEmitGenertor("test.dll");
+            var result = generator.GenerateTypes(new ITypeDescription[]
+                {
+                    new TypeDescription("Type", new List<IPropertyDescription>()
+                        {
+                            new PropertyDescription("Prop", typeof(int))
+                        })
+                }, typeMapper);
+
+            Assert.NotNull(result);
+            var first = result.Single();
+            Assert.NotNull(first.Type);
+            Console.WriteLine(first.Type.Assembly.Location);
+            StringAssert.Contains("test.dll", first.Type.Assembly.Location);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void Ctor_should_throw_exception_when_generator_is_null()
+        {
+            new Generator(null);
+        }
     }
 }

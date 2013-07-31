@@ -5,8 +5,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RJ.RuntimePocoGenerator", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RJ.RuntimePocoGenerator.Tests", "tst\RJ.RuntimePocoGenerator.Tests.csproj", "{9D8370C2-9360-48C9-999E-E972A0BF89DE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RJ.RuntimePocoGenerator.Nuget", "nuget\RJ.RuntimePocoGenerator.Nuget.csproj", "{63786CE5-D899-43DF-AD4E-C2CA3BAC3FC2}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,10 +19,6 @@ Global
 		{9D8370C2-9360-48C9-999E-E972A0BF89DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9D8370C2-9360-48C9-999E-E972A0BF89DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9D8370C2-9360-48C9-999E-E972A0BF89DE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{63786CE5-D899-43DF-AD4E-C2CA3BAC3FC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{63786CE5-D899-43DF-AD4E-C2CA3BAC3FC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{63786CE5-D899-43DF-AD4E-C2CA3BAC3FC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{63786CE5-D899-43DF-AD4E-C2CA3BAC3FC2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

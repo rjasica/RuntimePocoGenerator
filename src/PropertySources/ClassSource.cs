@@ -6,7 +6,7 @@ using System.Text;
 
 namespace RJ.RuntimePocoGenerator.PropertySources
 {
-    internal class ClassSource : IPropertySource
+    public class ClassSource : IPropertySource
     {
         private readonly Type type;
 

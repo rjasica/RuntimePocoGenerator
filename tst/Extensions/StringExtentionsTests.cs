@@ -39,5 +39,35 @@ namespace RJ.RuntimePocoGenerator.Tests.Extensions
 
             Assert.AreEqual("", target);
         }
+
+        [Test]
+        public void LowercaseFirst_should_upercase_first_char_when_char_is_uper()
+        {
+            string source = "Source";
+
+            string target = source.LowercaseFirst();
+
+            Assert.AreEqual("Source", target);
+        }
+
+        [Test]
+        public void LowercaseFirst_should_not_change_first_char_when_char_is_lower()
+        {
+            string source = "source";
+
+            string target = source.LowercaseFirst();
+
+            Assert.AreEqual("source", target);
+        }
+
+        [Test]
+        public void LowercaseFirst_should_empty_string_when_source_is_empty()
+        {
+            string source = "";
+
+            string target = source.LowercaseFirst();
+
+            Assert.AreEqual("", target);
+        }
     }
 }

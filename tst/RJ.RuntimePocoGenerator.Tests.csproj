@@ -31,15 +31,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\src\key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Moq">
-      <HintPath>..\packages\Moq.4.0.10827\lib\NET40\Moq.dll</HintPath>
-    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
     </Reference>
@@ -60,11 +57,10 @@
     <Compile Include="PropertySource\DictionarySourceTest.cs" />
     <Compile Include="PropertySource\MethodSourceTest.cs" />
     <Compile Include="PropertySource\IEnumeralbeKeyValueExtensions.cs" />
+    <Compile Include="TypeMappers\DefaultTypeMapperTests.cs" />
+    <Compile Include="TypeMappers\DefaultTypeSelectorTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\src\key.snk">
-      <Link>key.snk</Link>
-    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

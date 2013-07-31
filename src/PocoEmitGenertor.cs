@@ -1,20 +1,49 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
+using RJ.RuntimePocoGenerator.Extensions;
+using RJ.RuntimePocoGenerator.TypeMappers;
 
 namespace RJ.RuntimePocoGenerator
 {
     public class PocoEmitGenertor : IPocoGenertor
     {
-        public IEnumerable<IGeneratedType> GenerateTypes(IEnumerable<ITypeDescription> typeDescriptions)
+        private readonly string assemblyName;
+
+        private readonly bool getTypeFromDiskAssembly;
+
+        public PocoEmitGenertor()
+            :this(false)
+        {
+        }
+
+        public PocoEmitGenertor(bool getTypeFromDiskAssembly)
+        {
+            this.getTypeFromDiskAssembly = getTypeFromDiskAssembly;
+            this.assemblyName = "poco.dll";
+        }
+
+        public PocoEmitGenertor(string assemblyName)
+        {
+            this.getTypeFromDiskAssembly = true;
+            this.assemblyName = assemblyName;
+        }
+
+        public IEnumerable<IGeneratedType> GenerateTypes(IEnumerable<ITypeDescription> typeDescriptions, ITypeMapper typeMapper)
         {
             if (typeDescriptions == null)
             {
                 throw new ArgumentNullException("typeDescriptions");
+            }
+
+            if (typeMapper == null)
+            {
+                throw new ArgumentNullException("typeMapper");
             }
 
             Validate(typeDescriptions);
@@ -23,17 +52,57 @@ namespace RJ.RuntimePocoGenerator
             var assemblyName = new AssemblyName(name);
             var appDomain = Thread.GetDomain();
 
-            var assemblyBuilder = appDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-            var moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
-            
+            AssemblyBuilder assemblyBuilder;
+            ModuleBuilder moduleBuilder;
+
+            if (this.getTypeFromDiskAssembly)
+            {
+                assemblyBuilder = appDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndSave);
+                moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name, this.assemblyName);
+            }
+            else
+            {
+                assemblyBuilder = appDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+                moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name);    
+            }
+
             var generatedTypes = new List<IGeneratedType>();
             foreach (var typeDescription in typeDescriptions)
             {
-                var result = GenerateType(moduleBuilder, typeDescription);
+                var result = GenerateType(moduleBuilder, typeDescription, typeMapper);
+                typeMapper.RegisterNewType(typeDescription, result);
                 generatedTypes.Add(result);
             }
 
-            return generatedTypes;
+            if (this.getTypeFromDiskAssembly)
+            {
+                var generatedConvertedTypes = this.LoadFromDisk(assemblyBuilder, generatedTypes);
+
+                return generatedConvertedTypes;
+            }
+            else
+            {
+                return generatedTypes;
+            } 
+        }
+
+        private List<IGeneratedType> LoadFromDisk(AssemblyBuilder assemblyBuilder, List<IGeneratedType> generatedTypes)
+        {
+            assemblyBuilder.Save(this.assemblyName);
+            var assembly = Assembly.LoadFrom(this.assemblyName);
+            var conversion = assembly.GetTypes().ToDictionary(x => x.FullName, x => x);
+
+            var generatedConvertedTypes = new List<IGeneratedType>(generatedTypes.Count);
+
+            foreach (var generatedType in generatedTypes)
+            {
+                var fromDiskType = new GeneratedType(
+                    generatedType.Name,
+                    conversion[generatedType.Name],
+                    generatedType.TypeDescription);
+                generatedConvertedTypes.Add(fromDiskType);
+            }
+            return generatedConvertedTypes;
         }
 
         private void Validate(IEnumerable<ITypeDescription> typeDescriptions)
@@ -75,7 +144,7 @@ namespace RJ.RuntimePocoGenerator
             }
         }
 
-        private static IGeneratedType GenerateType(ModuleBuilder moduleBuilder, ITypeDescription typeDescription)
+        private static IGeneratedType GenerateType(ModuleBuilder moduleBuilder, ITypeDescription typeDescription, ITypeMapper typeMapper)
         {
             var typeBuilder = moduleBuilder.DefineType(typeDescription.Name, TypeAttributes.Public | TypeAttributes.Class);
 
@@ -84,14 +153,22 @@ namespace RJ.RuntimePocoGenerator
             var types = typeDescription.PropertyDescriptions.Select(x => x.Type).ToArray();
             var constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, types);
 
+            var index = 1;
+            foreach (var property in typeDescription.PropertyDescriptions)
+            {
+                constructorBuilder.DefineParameter(index, ParameterAttributes.None, property.Name.LowercaseFirst());
+                index++;
+            }
+
             var ctorIl = constructorBuilder.GetILGenerator();
             ctorIl.Emit(OpCodes.Ldarg_0);
             ctorIl.Emit(OpCodes.Call, typeBuilder.BaseType.GetConstructor(Type.EmptyTypes));
 
-            int index = 1;
+            index = 1;
             foreach (var property in typeDescription.PropertyDescriptions)
             {
-                EmitForPropertyDescription(typeBuilder, property, ctorIl, index);
+                var targetPropertyType = typeMapper.GetType(property.Type);
+                EmitForPropertyDescription(typeBuilder, property, ctorIl, index, targetPropertyType);
                 index++;
             }
 
@@ -101,11 +178,11 @@ namespace RJ.RuntimePocoGenerator
             return new GeneratedType(typeDescription.Name, type, typeDescription);
         }
 
-        private static void EmitForPropertyDescription(TypeBuilder typeBuilder, IPropertyDescription property, ILGenerator ctorIl, int index)
+        private static void EmitForPropertyDescription(TypeBuilder typeBuilder, IPropertyDescription property, ILGenerator ctorIl, int index, Type targetType)
         {
-            var field = typeBuilder.DefineField(property.Name, property.Type, FieldAttributes.Private);
+            var field = typeBuilder.DefineField(property.Name, targetType, FieldAttributes.Private);
 
-            EmitProperty(typeBuilder, property, field);
+            EmitProperty(typeBuilder, property.Name, field, targetType);
             EmitConstructorFieldInit(ctorIl, index, field);
         }
 
@@ -116,20 +193,20 @@ namespace RJ.RuntimePocoGenerator
             ctorIl.Emit(OpCodes.Stfld, field);
         }
 
-        private static void EmitProperty(TypeBuilder typeBuilder, IPropertyDescription property, FieldBuilder field)
+        private static void EmitProperty(TypeBuilder typeBuilder, string name, FieldBuilder field, Type targetType)
         {
-            var prop = typeBuilder.DefineProperty(property.Name, PropertyAttributes.None, property.Type, null);
+            var prop = typeBuilder.DefineProperty(name, PropertyAttributes.None, targetType, null);
 
-            var getter = EmitGetter(typeBuilder, property, field);
-            var setter = EmittSetter(typeBuilder, property, field);
+            var getter = EmitGetter(typeBuilder, name, targetType, field);
+            var setter = EmittSetter(typeBuilder, name, targetType, field);
 
             prop.SetGetMethod(getter);
             prop.SetSetMethod(setter);
         }
 
-        private static MethodBuilder EmittSetter(TypeBuilder typeBuilder, IPropertyDescription property, FieldBuilder field)
+        private static MethodBuilder EmittSetter(TypeBuilder typeBuilder, string name, Type type, FieldBuilder field)
         {
-            MethodBuilder setter = typeBuilder.DefineMethod("set_" + property.Name, MethodAttributes.Public, null, new Type[] {property.Type});
+            MethodBuilder setter = typeBuilder.DefineMethod("set_" +name, MethodAttributes.Public, null, new Type[] {type});
             var setterIl = setter.GetILGenerator();
             setterIl.Emit(OpCodes.Ldarg_0);
             setterIl.Emit(OpCodes.Ldarg_1);
@@ -138,9 +215,9 @@ namespace RJ.RuntimePocoGenerator
             return setter;
         }
 
-        private static MethodBuilder EmitGetter(TypeBuilder typeBuilder, IPropertyDescription property, FieldBuilder field)
+        private static MethodBuilder EmitGetter(TypeBuilder typeBuilder, string name, Type type, FieldBuilder field)
         {
-            var getter = typeBuilder.DefineMethod("get_" + property.Name, MethodAttributes.Public, property.Type, Type.EmptyTypes);
+            var getter = typeBuilder.DefineMethod("get_" +name, MethodAttributes.Public, type, Type.EmptyTypes);
             var getterIl = getter.GetILGenerator();
             getterIl.Emit(OpCodes.Ldarg_0);
             getterIl.Emit(OpCodes.Ldfld, field);

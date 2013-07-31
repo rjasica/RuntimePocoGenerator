@@ -5,7 +5,7 @@ using System.Text;
 
 namespace RJ.RuntimePocoGenerator.PropertySources
 {
-    internal class DictionarySource : IPropertySource
+    public class DictionarySource : IPropertySource
     {
         private readonly IDictionary<string, Type> dictionary;
 

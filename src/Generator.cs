@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using RJ.RuntimePocoGenerator.PropertySources;
+using RJ.RuntimePocoGenerator.TypeMappers;
 
 namespace RJ.RuntimePocoGenerator
 {
@@ -11,22 +12,40 @@ namespace RJ.RuntimePocoGenerator
     {
         private readonly IPocoGenertor pocoGenerator;
 
+        private readonly ITypeMapper typeMapper; 
+
         private readonly IDictionary<Type, IGeneratedType> typeCache;
 
         private readonly IDictionary<MethodInfo, IGeneratedType> methodCache;
 
         private readonly IDictionary<ITypeDescription, IGeneratedType> typeDescritpionCache;
 
-        public Generator(IPocoGenertor pocoGenerator)
+        public Generator(IPocoGenertor pocoGenerator, ITypeMapper typeMapper)
         {
-            this.pocoGenerator = pocoGenerator;
+            if (pocoGenerator == null)
+            {
+                throw new ArgumentNullException("pocoGenerator");
+            }
+
             this.typeCache = new Dictionary<Type, IGeneratedType>();
             this.typeDescritpionCache = new Dictionary<ITypeDescription, IGeneratedType>();
             this.methodCache = new Dictionary<MethodInfo, IGeneratedType>();
+            this.typeMapper = typeMapper;
+            this.pocoGenerator = pocoGenerator;
+
+            if (this.typeMapper == null)
+            {
+                this.typeMapper = new DefaultTypeMapper(this.typeDescritpionCache);
+            }
+        }
+
+        public Generator(IPocoGenertor pocoGenerator)
+            : this(pocoGenerator, null)
+        {
         }
 
         public Generator()
-            : this(new PocoEmitGenertor())
+            : this(new PocoEmitGenertor(), null)
         {
         }
 
@@ -106,7 +125,7 @@ namespace RJ.RuntimePocoGenerator
                 throw new ArgumentNullException("typeDescription");
             }
 
-            return this.GenerateTypes(new[] { typeDescription }).Single();
+            return this.GenerateTypes(new[] {typeDescription}).Where(x => x.Name == typeDescription.Name).Single();
         }
 
         public IEnumerable<IGeneratedType> GenerateTypes(IEnumerable<Type> types)
@@ -225,7 +244,20 @@ namespace RJ.RuntimePocoGenerator
                 }).Where(x => x != null).ToList();
             if (toGenerate.Count != 0)
             {
-                var generated = this.pocoGenerator.GenerateTypes(toGenerate);
+                var requiredTypes = toGenerate.SelectMany(x => x.PropertyDescriptions.SelectMany(
+                    y => this.typeMapper.GetRequiredTypeToGenerate(y.Type))).Distinct().ToList();
+                var requiredTypeDescriptions = requiredTypes.Select(x => GetTypeDescription(x));
+
+                var all = toGenerate.Union(requiredTypeDescriptions).Distinct().ToList();
+
+                var sorted = DependencySort.TopologicalSort.PerformTopoSort(all,
+                    (item, dependencies) =>
+                        {
+                            var dep = all.Where(x => x.PropertyDescriptions.Where(y => y.Type.FullName == item.Name).Any()).ToList();
+                            return dep;
+                        });
+                
+                var generated = this.pocoGenerator.GenerateTypes(sorted, this.typeMapper);
                 foreach (var generatedType in generated)
                 {
                     this.typeDescritpionCache[generatedType.TypeDescription] = generatedType;

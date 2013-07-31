@@ -31,12 +31,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DependencySort">
+      <HintPath>..\packages\DependencySort.1.0\lib\DependencySort.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -61,11 +65,14 @@
     <Compile Include="PropertySources\IPropertySource.cs" />
     <Compile Include="PropertySources\MethodSource.cs" />
     <Compile Include="TypeDescription.cs" />
+    <Compile Include="TypeMappers\DefaultTypeMapper.cs" />
+    <Compile Include="TypeMappers\DefaultTypeSelector.cs" />
+    <Compile Include="TypeMappers\ITypeMapper.cs" />
+    <Compile Include="TypeMappers\ITypeSelector.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="key.snk" />
+    <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

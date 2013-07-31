@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
-    <id>$id$</id>
+    <id>RJ.RuntimePocoGenerator</id>
     <version>$version$</version>
     <authors>Rafał Jasica</authors>
     <owners>Rafał Jasica</owners>
@@ -11,5 +11,8 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Emit poco objects from other or custom data at runtime</description>
     <tags>emit poco generate runtime type</tags>
+	<dependencies>
+	  <dependency id="DependencySort" version="1.0"/>
+	</dependencies>
   </metadata>
 </package>
